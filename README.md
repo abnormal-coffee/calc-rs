@@ -1,8 +1,8 @@
 # calc-rs
 A multi-purpose calculator including (hopefully at some point):
-» all basic operators (×÷+-)
-» indices
-» graphs
-» user-defined functions
-» user-defined variables
-» history+memory
+* - [x] all basic operators (×÷+-)
+* - [x] indices
+* - [x] graphs
+* - [ ] user-defined functions
+* - [x] user-defined variables
+* - [x] history+memory
