@@ -1,6 +1,7 @@
+use asciimath::{Scope, eval};
 use eframe::egui::{color_picker::Alpha, plot::PlotPoints};
 
-use crate::app::data::{self};
+use crate::app::data::{self, Data};
 
 pub fn graphing(data: &mut data::Data, ctx: &eframe::egui::Context,) {
     eframe::egui::SidePanel::right("graphing").resizable(true).show(ctx, |ui| {
@@ -66,7 +67,7 @@ pub fn graphing(data: &mut data::Data, ctx: &eframe::egui::Context,) {
                         let name_wrapper = &mut data.saved_values[i].0.clone();
                         ui.add(eframe::egui::TextEdit::singleline(name_wrapper).hint_text("Variable Name").desired_width(100.));
                         ui.add(eframe::egui::TextEdit::singleline(f64_wrapper).hint_text("Variable Value").desired_width(100.));
-                        if let Ok(parsed_value) = f64_wrapper.parse::<f64>() {
+                        if let Ok(parsed_value) = f64_wrapper.parse::<f32>() {
                             data.saved_values[i] = (name_wrapper.clone(), parsed_value);
                         }
                         else {data.saved_values[i] = (name_wrapper.clone(), 0.)}
@@ -79,9 +80,6 @@ pub fn graphing(data: &mut data::Data, ctx: &eframe::egui::Context,) {
                     data.saved_values.remove(data.remove.0);
                     data.remove.1 = false;
                 }
-                if ui.button("Add New").clicked() {
-                    data.saved_values.push(("name".to_string(), 0.));
-                }
             });
         }); 
     });
@@ -92,4 +90,19 @@ pub fn graphing(data: &mut data::Data, ctx: &eframe::egui::Context,) {
             };
         });
     });
+}
+
+fn evaluate(data: &mut Data) {
+    let expression = data.input_output.input.clone();
+    let mut variables = Scope::new();
+    for (name, val) in data.saved_values.clone(){
+        variables.set_var::<f32>(&name, val);
+    };
+    if let Ok(result) = eval(&expression, &variables) {
+        data.input_output.output = result.to_string()
+    };
+    if let Err(err) = eval(&expression, &variables) {
+        data.input_output.output = err.to_string()
+    };
+    data.history.push(data.input_output.clone());
 }

@@ -1,14 +1,16 @@
+use asciimath::{Scope, eval};
 use eframe::{self, epaint::Vec2};
 
-use crate::app::data;
+use crate::app::data::{self, Data};
 
 pub fn simple(data: &mut data::Data, ctx: &eframe::egui::Context,) {
     
     eframe::egui::CentralPanel::default().show(ctx, |ui| {
 
-        ui.add(eframe::egui::TextEdit::multiline(&mut data.input_output.input).desired_rows(5));
+        ui.add(eframe::egui::TextEdit::multiline(&mut data.input_output.input).desired_rows(1).desired_width(315.));
+        ui.add(eframe::egui::TextEdit::singleline(&mut data.input_output.output).desired_width(315.).hint_text("Output"));
+        
         ui.separator();
-        ui.add(eframe::egui::TextEdit::singleline(&mut data.input_output.output).hint_text("Output"));
         
         eframe::egui::containers::Frame::none().show(ui, |ui| {
             eframe::egui::Grid::new("simple").show(ui, |ui| {
@@ -40,9 +42,7 @@ pub fn simple(data: &mut data::Data, ctx: &eframe::egui::Context,) {
                     data.input_output.input.push_str("0");
                 }
                 if ui.add(eframe::egui::Button::new("=").min_size(Vec2 { x: 75., y: 75. })).clicked() {
-                    let mut yard = rustyard::ShuntingYard::new();
-                    data.input_output.output = yard.calculate(data.input_output.input.as_str()).unwrap().to_string();
-                    data.history.push(data.input_output.clone());
+                    evaluate(data);
                 }
                 if ui.add(eframe::egui::Button::new("*").min_size(Vec2 { x: 75., y: 75. })).clicked() {
                     data.input_output.input.push_str("*");
@@ -51,4 +51,19 @@ pub fn simple(data: &mut data::Data, ctx: &eframe::egui::Context,) {
         })
         
     });
+}
+
+fn evaluate(data: &mut Data) {
+    let expression = data.input_output.input.clone();
+    let mut variables = Scope::new();
+    for (name, val) in data.saved_values.clone(){
+        variables.set_var::<f32>(&name, val);
+    };
+    if let Ok(result) = eval(&expression, &variables) {
+        data.input_output.output = result.to_string()
+    };
+    if let Err(err) = eval(&expression, &variables) {
+        data.input_output.output = err.to_string()
+    };
+    data.history.push(data.input_output.clone());
 }

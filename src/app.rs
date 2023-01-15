@@ -1,8 +1,9 @@
+use asciimath::{Scope, eval};
 use eframe;
 use serde;
 
 
-use self::mode::graphing;
+use self::{mode::graphing, data::Data};
 
 mod mode;
 mod data;
@@ -91,6 +92,12 @@ impl eframe::App for CalcState {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         
         let Self { data, settings} = self;
+
+        if data.input_output.input.contains('=') {
+            data.input_output.input = data.input_output.input.replace('=', "");
+            evaluate(data);
+            data.history.push(data.input_output.clone());
+        }
         
         theme_updater::update_theme(ctx);
         
@@ -127,4 +134,19 @@ impl eframe::App for CalcState {
             }
         }
     }
+}
+
+fn evaluate(data: &mut Data) {
+    let expression = data.input_output.input.clone();
+    let mut variables = Scope::new();
+    for (name, val) in data.saved_values.clone(){
+        variables.set_var::<f32>(&name, val);
+    };
+    if let Ok(result) = eval(&expression, &variables) {
+        data.input_output.output = result.to_string()
+    };
+    if let Err(err) = eval(&expression, &variables) {
+        data.input_output.output = err.to_string()
+    };
+    data.history.push(data.input_output.clone());
 }

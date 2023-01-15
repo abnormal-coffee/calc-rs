@@ -1,6 +1,7 @@
+use asciimath::{Scope, eval};
 use eframe::epaint::Vec2;
 
-use crate::app::data;
+use crate::app::data::{self, Data};
 
 pub fn advanced(data: &mut data::Data, ctx: &eframe::egui::Context,) {
     
@@ -27,7 +28,7 @@ pub fn advanced(data: &mut data::Data, ctx: &eframe::egui::Context,) {
                         let name_wrapper = &mut data.saved_values[i].0.clone();
                         ui.add(eframe::egui::TextEdit::singleline(name_wrapper).hint_text("Variable Name").desired_width(100.));
                         ui.add(eframe::egui::TextEdit::singleline(f64_wrapper).hint_text("Variable Value").desired_width(100.));
-                        if let Ok(parsed_value) = f64_wrapper.parse::<f64>() {
+                        if let Ok(parsed_value) = f64_wrapper.parse::<f32>() {
                             data.saved_values[i] = (name_wrapper.clone(), parsed_value);
                         }
                         else {data.saved_values[i] = (name_wrapper.clone(), 0.)}
@@ -40,7 +41,7 @@ pub fn advanced(data: &mut data::Data, ctx: &eframe::egui::Context,) {
                     data.saved_values.remove(data.remove.0);
                     data.remove.1 = false;
                 }
-                if ui.button("Add New").clicked() {
+                if ui.button("Add New                                                              ").clicked() {
                     data.saved_values.push(("name".to_string(), 0.));
                 }
             });
@@ -51,6 +52,7 @@ pub fn advanced(data: &mut data::Data, ctx: &eframe::egui::Context,) {
 
         ui.add(eframe::egui::TextEdit::multiline(&mut data.input_output.input).hint_text("Input - if you press enter it will create a new line").desired_rows(1).desired_width(315.));
         ui.add(eframe::egui::TextEdit::singleline(&mut data.input_output.output).hint_text("Output").desired_width(315.));
+        
         ui.separator();
         
         eframe::egui::containers::Frame::none().show(ui, |ui| {
@@ -83,15 +85,7 @@ pub fn advanced(data: &mut data::Data, ctx: &eframe::egui::Context,) {
                     data.input_output.input.push_str("0");
                 }
                 if ui.add(eframe::egui::Button::new("=").min_size(Vec2 { x: 75., y: 75. })).clicked() {
-                    let mut variables_substituted = data.input_output.input.clone();
-                    for variable in data.saved_values.clone() {
-                        variables_substituted = variables_substituted.as_str().replace(variable.0.as_str(), format!("( {} ), ", variable.1).as_str());
-                    }
-                    let mut yard = rustyard::ShuntingYard::new();
-                    if let Ok(output) = yard.calculate(variables_substituted.as_str()) {
-                        data.input_output.output = output.to_string()
-                    }
-                    data.history.push(data.input_output.clone());
+                    evaluate(data);
                 }
                 if ui.add(eframe::egui::Button::new("*").min_size(Vec2 { x: 75., y: 75. })).clicked() {
                     data.input_output.input.push_str("*");
@@ -100,4 +94,19 @@ pub fn advanced(data: &mut data::Data, ctx: &eframe::egui::Context,) {
         })
         
     });
+}
+
+fn evaluate(data: &mut Data) {
+    let expression = data.input_output.input.clone();
+    let mut variables = Scope::new();
+    for (name, val) in data.saved_values.clone(){
+        variables.set_var::<f32>(&name, val);
+    };
+    if let Ok(result) = eval(&expression, &variables) {
+        data.input_output.output = result.to_string()
+    };
+    if let Err(err) = eval(&expression, &variables) {
+        data.input_output.output = err.to_string()
+    };
+    data.history.push(data.input_output.clone());
 }

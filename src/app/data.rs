@@ -29,7 +29,7 @@ pub struct Funtion {
 pub struct Data {
     pub input_output: InputOutput,
     pub history: Vec<InputOutput>,
-    pub saved_values: Vec<(String, f64)>,
+    pub saved_values: Vec<(String, f32)>,
     pub saved_functions: Vec<Vec<String>>,
     pub graphs: Vec<Graph>,
     pub remove: (usize, bool),
