@@ -6,3 +6,4 @@ A multi-purpose calculator including (hopefully at some point):
 * - [ ] user-defined functions
 * - [x] user-defined variables
 * - [x] history+memory
+* - [ ] complex numbers
